@@ -1045,14 +1045,14 @@ struct InverseTransformAdd :
 
                 //  void transform_partial_butterfly_inverse_8v_ssse3(int16_t *dst, const int16_t *src, int shift);
 
-                auto &r0 = arg64(0);
+                // auto &r0 = arg64(0);
                 auto &r1 = arg64(1);
-                auto &r2 = arg64(2);
+                // auto &r2 = arg64(2);
                 auto &r3 = arg64(3);
                 auto &r4 = arg64(4);
-                auto &r5 = reg64(5);
-                auto &r6 = reg64(6);
-                auto &r7 = reg64(7);
+                // auto &r5 = reg64(5);
+                // auto &r6 = reg64(6);
+                // auto &r7 = reg64(7);
 
                 auto &m0 = regXmm(0);
                 auto &m1 = regXmm(1);
@@ -1205,20 +1205,20 @@ struct InverseTransformAdd :
                 auto &r3 = arg64(3);
                 auto &r4 = arg64(4);
 
-                auto &m0 = regXmm(0);
-                auto &m1 = regXmm(1);
+                // auto &m0 = regXmm(0);
+                // auto &m1 = regXmm(1);
                 auto &m2 = regXmm(2);
-                auto &m3 = regXmm(3);
-                auto &m4 = regXmm(4);
+                // auto &m3 = regXmm(3);
+                // auto &m4 = regXmm(4);
                 auto &m5 = regXmm(5);
                 auto &m6 = regXmm(6);
                 auto &m7 = regXmm(7);
-                auto &m8 = regXmm(8);
-                auto &m9 = regXmm(9);
+                // auto &m8 = regXmm(8);
+                // auto &m9 = regXmm(9);
                 auto &m10 = regXmm(10);
                 auto &m11 = regXmm(11);
-                auto &m12 = regXmm(12);
-                auto &m13 = regXmm(13);
+                // auto &m12 = regXmm(12);
+                // auto &m13 = regXmm(13);
                 auto &m14 = regXmm(14);
                 auto &m15 = regXmm(15);
 
@@ -1355,7 +1355,7 @@ struct InverseTransformAdd :
             {
                 auto &r0 = reg64(0);
                 auto &r1 = reg64(1);
-                auto &r2 = reg64(2);
+                // auto &r2 = reg64(2);
                 auto &r3 = reg64(3);
                 auto &r4 = reg64(4);
                 auto r4d = Xbyak::Reg32(r4.getIdx());
@@ -1944,10 +1944,10 @@ struct InverseTransformAdd :
             // - g5:     spill buffer.
             //DEFFUN f265_lbd_idct_32_avx2, ia=6, at=848488, fa=0, ti=3, tv=16, ym=1
 
-            auto &g0 = arg64(0);
-            auto &g1 = arg64(1);
-            auto &g2 = arg64(2);
-            auto &g3 = arg64(3);
+            // auto &g0 = arg64(0);
+            // auto &g1 = arg64(1);
+            // auto &g2 = arg64(2);
+            // auto &g3 = arg64(3);
             auto &g4 = arg64(4);
             auto &g5 = reg64(5);
             auto &g6 = reg64(6);
@@ -1957,22 +1957,22 @@ struct InverseTransformAdd :
             this->stackSize = 128 * 16;
             mov(g5, rsp);
 
-            auto &y0 = ymm0; auto &x0 = regXmm(0);
-            auto &y1 = ymm1; auto &x1 = regXmm(1);
-            auto &y2 = ymm2; auto &x2 = regXmm(2);
-            auto &y3 = ymm3; auto &x3 = regXmm(3);
-            auto &y4 = ymm4; auto &x4 = regXmm(4);
-            auto &y5 = ymm5; auto &x5 = regXmm(5);
-            auto &y6 = ymm6; auto &x6 = regXmm(6);
-            auto &y7 = ymm7; auto &x7 = regXmm(7);
-            auto &y8 = ymm8; auto &x8 = regXmm(8);
-            auto &y9 = ymm9; auto &x9 = regXmm(9);
-            auto &y10 = ymm10; auto &x10 = regXmm(10);
-            auto &y11 = ymm11; auto &x11 = regXmm(11);
-            auto &y12 = ymm12; auto &x12 = regXmm(12);
-            auto &y13 = ymm13; auto &x13 = regXmm(13);
-            auto &y14 = ymm14; auto &x14 = regXmm(14);
-            auto &y15 = ymm15; auto &x15 = regXmm(15);
+            auto &y0 = ymm0;
+            auto &y1 = ymm1;
+            auto &y2 = ymm2;
+            auto &y3 = ymm3;
+            auto &y4 = ymm4;
+            auto &y5 = ymm5;
+            auto &y6 = ymm6;
+            auto &y7 = ymm7;
+            auto &y8 = ymm8;
+            auto &y9 = ymm9;
+            auto &y10 = ymm10;
+            auto &y11 = ymm11;
+            auto &y12 = ymm12;
+            auto &y13 = ymm13;
+            auto &y14 = ymm14;
+            auto &y15 = ymm15;
 
             // Note : To make it easier, the notation used in the C
             // code is used to describe the output terms in each code section.
@@ -2313,22 +2313,22 @@ struct InverseTransformAdd :
             this->stackSize = 512 + 512 + 512;
             mov(g5, rsp);
 
-            auto &y0 = ymm0; auto &x0 = regXmm(0);
-            auto &y1 = ymm1; auto &x1 = regXmm(1);
-            auto &y2 = ymm2; auto &x2 = regXmm(2);
-            auto &y3 = ymm3; auto &x3 = regXmm(3);
-            auto &y4 = ymm4; auto &x4 = regXmm(4);
-            auto &y5 = ymm5; auto &x5 = regXmm(5);
-            auto &y6 = ymm6; auto &x6 = regXmm(6);
-            auto &y7 = ymm7; auto &x7 = regXmm(7);
-            auto &y8 = ymm8; auto &x8 = regXmm(8);
-            auto &y9 = ymm9; auto &x9 = regXmm(9);
-            auto &y10 = ymm10; auto &x10 = regXmm(10);
-            auto &y11 = ymm11; auto &x11 = regXmm(11);
-            auto &y12 = ymm12; auto &x12 = regXmm(12);
-            auto &y13 = ymm13; auto &x13 = regXmm(13);
-            auto &y14 = ymm14; auto &x14 = regXmm(14);
-            auto &y15 = ymm15; auto &x15 = regXmm(15);
+            auto &y0 = ymm0;
+            auto &y1 = ymm1;
+            auto &y2 = ymm2;
+            auto &y3 = ymm3;
+            auto &y4 = ymm4;
+            auto &y5 = ymm5;
+            auto &y6 = ymm6;
+            auto &y7 = ymm7;
+            auto &y8 = ymm8;
+            auto &y9 = ymm9;
+            auto &y10 = ymm10;
+            auto &y11 = ymm11;
+            auto &y12 = ymm12;
+            auto &y13 = ymm13;
+            auto &y14 = ymm14;
+            auto &y15 = ymm15;
 
             // DCT pass 1.
 
@@ -2516,17 +2516,17 @@ struct InverseTransformAdd :
 
             auto &y0 = ymm0; auto &x0 = regXmm(0);
             auto &y1 = ymm1; auto &x1 = regXmm(1);
-            auto &y2 = ymm2; auto &x2 = regXmm(2);
-            auto &y3 = ymm3; auto &x3 = regXmm(3);
-            auto &y4 = ymm4; auto &x4 = regXmm(4);
+            auto &y2 = ymm2;
+            auto &y3 = ymm3;
+            auto &y4 = ymm4;
             auto &y5 = ymm5; auto &x5 = regXmm(5);
-            auto &y6 = ymm6; auto &x6 = regXmm(6);
-            auto &y7 = ymm7; auto &x7 = regXmm(7);
-            auto &y8 = ymm8; auto &x8 = regXmm(8);
-            auto &y9 = ymm9; auto &x9 = regXmm(9);
-            auto &y10 = ymm10; auto &x10 = regXmm(10);
-            auto &y11 = ymm11; auto &x11 = regXmm(11);
-            auto &y12 = ymm12; auto &x12 = regXmm(12);
+            auto &y6 = ymm6;
+            auto &y7 = ymm7;
+            auto &y8 = ymm8;
+            auto &y9 = ymm9;
+            auto &y10 = ymm10;
+            auto &y11 = ymm11;
+            auto &y12 = ymm12;
 
             // I. Load the 16-bit input data.
 

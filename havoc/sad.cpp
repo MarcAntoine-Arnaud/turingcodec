@@ -227,7 +227,7 @@ struct SadSse2 :
 template <typename Sample>
 static int havoc_sad_c_opt_4(const Sample *src, intptr_t stride_src, const Sample *ref, intptr_t stride_ref, uint32_t rect)
 {
-    const int width = rect >> 8;
+    // const int width = rect >> 8;
     const int height = rect & 0xff;
     int sad = 0;
     for (int y = 0; y < height; ++y)
@@ -247,7 +247,7 @@ static int havoc_sad_c_opt_4(const Sample *src, intptr_t stride_src, const Sampl
 template <typename Sample>
 static int havoc_sad_c_opt_8(const Sample *src, intptr_t stride_src, const Sample *ref, intptr_t stride_ref, uint32_t rect)
 {
-    const int width = rect >> 8;
+    // const int width = rect >> 8;
     const int height = rect & 0xff;
     int sad = 0;
     for (int y = 0; y < height; ++y)
@@ -271,7 +271,7 @@ static int havoc_sad_c_opt_8(const Sample *src, intptr_t stride_src, const Sampl
 template <typename Sample>
 static int havoc_sad_c_opt_16(const Sample *src, intptr_t stride_src, const Sample *ref, intptr_t stride_ref, uint32_t rect)
 {
-    const int width = rect >> 8;
+    // const int width = rect >> 8;
     const int height = rect & 0xff;
     int sad = 0;
     for (int y = 0; y < height; ++y)
@@ -303,7 +303,7 @@ static int havoc_sad_c_opt_16(const Sample *src, intptr_t stride_src, const Samp
 template <typename Sample>
 static int havoc_sad_c_opt_32(const Sample *src, intptr_t stride_src, const Sample *ref, intptr_t stride_ref, uint32_t rect)
 {
-    const int width = rect >> 8;
+    // const int width = rect >> 8;
     const int height = rect & 0xff;
     int sad = 0;
     for (int y = 0; y < height; ++y)
@@ -351,7 +351,7 @@ static int havoc_sad_c_opt_32(const Sample *src, intptr_t stride_src, const Samp
 template <typename Sample>
 static int havoc_sad_c_opt_64(const Sample *src, intptr_t stride_src, const Sample *ref, intptr_t stride_ref, uint32_t rect)
 {
-    const int width = rect >> 8;
+    // const int width = rect >> 8;
     const int height = rect & 0xff;
     int sad = 0;
     for (int y = 0; y < height; ++y)
@@ -624,7 +624,7 @@ struct Sad4Avx2 :
         auto &xmm6 = regXmm(6);
         auto &xmm7 = regXmm(7);
         auto &xmm8 = regXmm(8);
-        auto *xmm9 = sizeof(Sample) == 2 ? &regXmm(9) : (Xbyak::Xmm const *)0;
+        // auto *xmm9 = sizeof(Sample) == 2 ? &regXmm(9) : (Xbyak::Xmm const *)0;
 
         if (sizeof(Sample) == 2)
             vpxor(ymm9, ymm9);
@@ -791,7 +791,7 @@ struct Sad4Avx2 :
             auto &r2 = arg64(2);
             auto &r3 = arg64(3);
             auto &r4 = arg64(4);
-            auto &r5 = arg64(5);
+            // auto &r5 = arg64(5);
 
             auto &r6 = reg64(6);
             auto &r7 = reg64(7);
