@@ -38,8 +38,8 @@ namespace Jit {
     {
         Buffer(size_t n, havoc_instruction_set isa= HAVOC_NONE)
         :
-            buffer(n),
-            isa(isa)
+            isa(isa),
+            buffer(n)
         {
             this->update(&this->buffer[0]);
             Xbyak::CodeArray::protect(this->p, this->nRemainingBytes(), true);
@@ -91,9 +91,9 @@ namespace Jit {
             int nArguments;
 
             Function(Buffer *buffer, int nArguments) :
-                buffer(buffer),
                 Xbyak::CodeGenerator(buffer ? buffer->nRemainingBytes() : 4096, buffer ? buffer->pointer() : 0),
-                nArguments(nArguments)
+                nArguments(nArguments),
+                buffer(buffer)
                 {
                 }
 
