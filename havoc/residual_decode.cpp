@@ -2313,7 +2313,7 @@ struct InverseTransformAdd :
             this->stackSize = 512 + 512 + 512;
             mov(g5, rsp);
 
-            auto &y0 = ymm0;
+            auto &y0 = ymm0; auto &x0 = regXmm(0);
             auto &y1 = ymm1;
             auto &y2 = ymm2;
             auto &y3 = ymm3;
