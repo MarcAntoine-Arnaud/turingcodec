@@ -1367,7 +1367,7 @@ struct PredBi
 
 
 
-        //p16(intermediate[2], 64, ref0 - (taps / 2 - 1) * stride_ref, stride_ref, w, h + taps - 1, xFrac0, 0); \
+        // p16(intermediate[2], 64, ref0 - (taps / 2 - 1) * stride_ref, stride_ref, w, h + taps - 1, xFrac0, 0);
 
 
     }
