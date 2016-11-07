@@ -263,13 +263,13 @@ struct PredInter
     PredInter(Jit::Buffer *buffer, int params, int taps, int width, int xFrac, int yFrac, int inputBitDepth, int inputSize)
         :
         Jit::Function(buffer, params),
+        refs(1),
         taps(taps),
         width(width),
         xFrac(xFrac),
         yFrac(yFrac),
         inputBitDepth(inputBitDepth),
-        inputSize(inputSize),
-        refs(1)
+        inputSize(inputSize)
     {
         this->build();
     }
@@ -701,10 +701,10 @@ struct PredInter
         auto &r6 = reg64(6);
         Xbyak::Reg32 r6d(r6.getIdx());
 
-        auto &m0 = regXmm(0);
-        auto &m1 = regXmm(1);
-        auto &m2 = regXmm(2);
-        auto &m3 = regXmm(3);
+        // auto &m0 = regXmm(0);
+        // auto &m1 = regXmm(1);
+        // auto &m2 = regXmm(2);
+        // auto &m3 = regXmm(3);
         auto &m4 = regXmm(4);
         auto &m5 = regXmm(5);
         auto &m6 = regXmm(6);
@@ -745,7 +745,7 @@ struct PredInter
 
         L("loop");
         {
-            for (int i = 0; i < width * sizeof(Sample) / 16; ++i)
+            for (size_t i = 0; i < width * sizeof(Sample) / 16; ++i)
             {
                 int const dx = 16 * i;
                 filterHorizontal16Bytes(taps, 0, dx, filteringHV);
@@ -1266,7 +1266,6 @@ struct PredBi
         width(width),
         taps(taps)
     {
-        static int n = 0;
         this->build();
     }
 
@@ -1274,14 +1273,14 @@ struct PredBi
 
     void assembleInterp()
     {
-        auto &m0 = regXmm(0);
-        auto &m1 = regXmm(1);
-        auto &m2 = regXmm(2);
-        auto &m3 = regXmm(3);
-        auto &m4 = regXmm(4);
-        auto &m5 = regXmm(5);
-        auto &m6 = regXmm(6);
-        auto &m7 = regXmm(7);
+        // auto &m0 = regXmm(0);
+        // auto &m1 = regXmm(1);
+        // auto &m2 = regXmm(2);
+        // auto &m3 = regXmm(3);
+        // auto &m4 = regXmm(4);
+        // auto &m5 = regXmm(5);
+        // auto &m6 = regXmm(6);
+        // auto &m7 = regXmm(7);
 
         auto &r0 = arg64(0); // dst
         auto &r1 = arg64(1);
@@ -1385,7 +1384,7 @@ struct PredBi
         auto &r2 = arg64(2);
         auto &r3 = arg64(3);
         auto &r4 = arg64(4);
-        auto &r5 = arg64(5);
+        // auto &r5 = arg64(5);
         auto r6d = Xbyak::Reg32(arg64(6).getIdx());
 
         auto &m0 = regXmm(0);
@@ -1399,7 +1398,7 @@ struct PredBi
 
         L("loop");
         {
-            for (int dx = 0; dx < width * sizeof(Sample); dx += 16)
+            for (size_t dx = 0; dx < width * sizeof(Sample); dx += 16)
             {
                 movdqu(m0, ptr[r2 + dx]);
                 movdqu(m1, ptr[r3 + dx]);
@@ -1623,10 +1622,10 @@ struct PredBi
         auto &r6 = reg64(6);
         Xbyak::Reg32 r6d(r6.getIdx());
 
-        auto &m0 = regXmm(0);
-        auto &m1 = regXmm(1);
-        auto &m2 = regXmm(2);
-        auto &m3 = regXmm(3);
+        // auto &m0 = regXmm(0);
+        // auto &m1 = regXmm(1);
+        // auto &m2 = regXmm(2);
+        // auto &m3 = regXmm(3);
         auto &m4 = regXmm(4);
         auto &m5 = regXmm(5);
         auto &m6 = regXmm(6);
@@ -1667,7 +1666,7 @@ struct PredBi
 
         L("loop");
         {
-            for (int i = 0; i < width * sizeof(Sample) / 16; ++i)
+            for (size_t i = 0; i < width * sizeof(Sample) / 16; ++i)
             {
                 int const dx = 16 * i;
                 filterHorizontal16Bytes(taps, 0, dx, filteringHV);
@@ -2215,7 +2214,7 @@ namespace havoc {
         HAVOC_ALIGN(32, Sample, pred[64 * stride]);
         HAVOC_ALIGN(32, Sample, dst[64 * stride]);
 
-        for (int x = 0; x < 64 * stride; x++)
+        for (size_t x = 0; x < 64 * stride; x++)
         {
             src[x] = rand() % (1 << bitDepth);
             pred[x] = rand() % (1 << bitDepth);
