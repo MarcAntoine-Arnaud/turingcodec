@@ -587,9 +587,9 @@ struct Satd8
         auto &m9 = ymm9;
         auto &m10 = ymm10;
         auto &m11 = ymm11;
-        auto &m12 = ymm12;
-        auto &m13 = ymm13;
-        auto &m14 = ymm14;
+        // auto &m12 = ymm12;
+        // auto &m13 = ymm13;
+        // auto &m14 = ymm14;
         auto &m15 = ymm15;
 
         regXmm(15);
