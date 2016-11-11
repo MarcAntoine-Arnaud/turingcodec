@@ -40,6 +40,7 @@ For more information, contact us at info @ turingcodec.org.
 #include <cassert>
 #include <string>
 #include <sstream>
+#include <stdio.h>
 
 
 void Encoder::parseInputRes()
@@ -89,6 +90,7 @@ Encoder::Encoder(boost::program_options::variables_map &vm) :
     this->stateEncode.saoslow = this->booleanSwitchSetting("sao-slow-mode", speed.useSaoSlow());
     this->stateEncode.verbosity = this->vm["verbosity"].as<int>();
     this->stateEncode.gopM = std::min(this->vm["max-gop-m"].as<int>(), this->vm["max-gop-n"].as<int>());
+    this->stateEncode.segmentLength = this->vm["segment"].as<int>();
     this->stateEncode.maxnummergecand = (this->vm["max-num-merge-cand"].defaulted()) ? (speed.setMaxNumMergeCand()) : this->vm["max-num-merge-cand"].as<int>();
     this->stateEncode.preferredTransferCharacteristics = this->vm["atc-sei"].as<int>();
 
@@ -209,12 +211,34 @@ Encoder::Encoder(boost::program_options::variables_map &vm) :
                 this->pictureHeight,
                 this->pictureWidth,
                 this->vm["ctu"].as<int>(),
-                6,
-                this->vm["qp"].as<int>()));
-        this->stateEncode.concurrentFrames = 1;
+                this->vm["qp"].as<int>(),
+                this->stateEncode.wpp,
+                this->stateEncode.concurrentFrames));
     }
 
     this->stateEncode.repeatHeaders = this->vm["repeat-headers"].as<bool>();
+
+    if(this->vm.count("mastering-display-info"))
+    {
+        this->stateEncode.masteringDisplayInfoPresent = true;
+        string masteringDisplayInfo = this->vm["mastering-display-info"].as<string>();
+
+        sscanf(masteringDisplayInfo.c_str(), "G(%hu,%hu)B(%hu,%hu)R(%hu,%hu)WP(%hu,%hu)L(%u,%u)",
+                   &this->stateEncode.masterDisplayInfo.displayPrimariesX[0],
+                   &this->stateEncode.masterDisplayInfo.displayPrimariesY[0],
+                   &this->stateEncode.masterDisplayInfo.displayPrimariesX[1],
+                   &this->stateEncode.masterDisplayInfo.displayPrimariesY[1],
+                   &this->stateEncode.masterDisplayInfo.displayPrimariesX[2],
+                   &this->stateEncode.masterDisplayInfo.displayPrimariesY[2],
+                   &this->stateEncode.masterDisplayInfo.whitePointX,
+                   &this->stateEncode.masterDisplayInfo.whitePointY,
+                   &this->stateEncode.masterDisplayInfo.maxDisplayMasteringLuma,
+                   &this->stateEncode.masterDisplayInfo.minDisplayMasteringLuma);
+    }
+    else
+    {
+        this->stateEncode.masteringDisplayInfoPresent = false;
+    }
 
     this->setupPps(h);
     ProfileTierLevel *ptl = this->setupSps(h);
@@ -261,6 +285,8 @@ void Encoder::printHeader(std::ostream &cout, std::string const &inputFile, std:
     cout << "Frame/Field    coding           : " << (this->stateEncode.fieldcoding ? "Field based coding\n" : "Frame based coding\n");
     cout << "Coding unit size (min/max)      : " << this->vm.at("ctu").as<int>() << " / " << this->vm.at("min-cu").as<int>() << "\n";
     cout << "Intra period                    : " << this->vm.at("max-gop-n").as<int>() << "\n";
+    if (this->vm.at("segment").as<int>() != -1)
+        cout << "IDR Segment length              : " << this->vm.at("segment").as<int>() << "\n";
     if (this->stateEncode.scd)
         cout << "Shot change detection enabled. Warning: up to 48 frames will be kept in the buffer.\n";
     cout << "Structure Of Picture (SOP) size : " << this->vm.at("max-gop-m").as<int>() << "\n";
@@ -492,33 +518,39 @@ bool Encoder::encodePicture(std::shared_ptr<PictureWrapper> picture, std::vector
                 int sliceType = h[slice_type()];
 
                 std::ostringstream oss;
-
-                oss << "POC" << std::setw(5) << h[PicOrderCntVal()] << " ( " << sliceTypeToChar(sliceType) << "-SLICE, QP " << std::setw(4) << qp << " ) ";
+                
+                const int currentPoc = h[PicOrderCntVal()];
+                double psnrY, psnrU, psnrV;
+                stateEncode.psnrAnalysis->getPsnrFrameData(currentPoc, psnrY, psnrU, psnrV);
+                oss << "POC" << std::setw(5) << currentPoc << " ( " << sliceTypeToChar(sliceType) << "-SLICE, QP " << std::setw(4) << qp << " ) ";
                 oss << std::setw(12) << 8 * bytes << " bits ";
                 oss << std::setprecision(4);
                 oss << std::fixed;
-                oss << "[ Y" << std::setw(8) << stateEncode.psnrAnalysis->currentPsnr[0] << " dB  ";
-                oss << " U" << std::setw(8) << stateEncode.psnrAnalysis->currentPsnr[1] << " dB  ";
-                oss << " V" << std::setw(8) << stateEncode.psnrAnalysis->currentPsnr[2] << " dB ]";
+                oss << "[ Y" << std::setw(8) << psnrY << " dB  ";
+                oss << " U" << std::setw(8) << psnrU << " dB  ";
+                oss << " V" << std::setw(8) << psnrV << " dB ]";
                 oss << std::setprecision(1);
                 oss << " [ ET " << frameEncoderTimeSec.count() << " ] ";
+                stateEncode.psnrAnalysis->removePsnrFrameData(currentPoc);
 
                 if (this->stateEncode.decodedHashSei)
                 {
+                    StateEncode::FrameHash currentHash = stateEncode.getFrameHash(currentPoc);
                     std::string digestHashString;
                     switch (this->stateEncode.hashType)
                     {
                         case MD5:
-                            digestHashString = "[MD5:" + hashToString(this->stateEncode.hashElement, 16) + "]";
+                            digestHashString = "[MD5:" + hashToString(currentHash.hash, 16) + "]";
                             break;
                         case CRC:
-                            digestHashString = "[CRC:" + hashToString(this->stateEncode.hashElement, 2) + "]";
+                            digestHashString = "[CRC:" + hashToString(currentHash.hash, 2) + "]";
                             break;
                         case CHKSUM:
-                            digestHashString = "[CKS:" + hashToString(this->stateEncode.hashElement, 4) + "]";
+                            digestHashString = "[CKS:" + hashToString(currentHash.hash, 4) + "]";
                             break;
                     }
                     oss << digestHashString << " ";
+                    stateEncode.removeFrameHash(currentPoc);
                 }
 
                 // Implemented print out of reference frames used
@@ -836,10 +868,6 @@ void Encoder::setupVui(H &h)
         h[vui_hrd_parameters_present_flag()] = 0;
         h[field_seq_flag()] = 0;
         h[frame_field_info_present_flag()] = 1;
-        //h[pic_struct()] = 1;
-        //h[source_scan_type()] = 1;
-        //h[duplicate_flag()] = 1;
-
     }
     else
     {

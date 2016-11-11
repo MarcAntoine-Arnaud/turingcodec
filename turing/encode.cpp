@@ -75,7 +75,14 @@ int parseEncodeOptions(po::variables_map &vm, int argc, const char* const argv[]
                 ("dump-pictures", po::value<std::string>(), "reconstructed YUV file name (separate fields if field-coding is enabled)")
                 ("dump-frames", po::value<std::string>(), "reconstructed YUV file name (interleaved frames if field-coding is enabled)")
                 ("hash", po::value<int>(), "Decoded picture hash: 0 = MD5 sum, 1 = CRC, 2 = Check sum")
-                ("atc-sei", po::value<int>()->default_value(-1), "Alternative transfer characteristics SEI message: --atc-sei ptc (preferred transfer characteristics)");
+                ("atc-sei", po::value<int>()->default_value(-1), "Alternative transfer characteristics SEI message: --atc-sei ptc (preferred transfer characteristics)")
+                ("mastering-display-info", po::value<std::string>(), "Mastering display colour volume SEI message: --mastering-display-info <string> "
+                        "where string has the following format:\n"
+                        "\"G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)\"\n"
+                        "- with G(x,y) denoting the normalised x and y chromaticity coordinates for the green colour (and similarly for blue and red),\n"
+                        "- WP(x,y) denoting the normalised x and y chromaticity coordinates, respectively, of the white point of the mastering display and\n"
+                        "- L(max,min) denoting the nominal maximum and minimum display luminance, respectively, of the mastering display\n"
+                        "See Sections D.2.27 and D.3.27 of the HEVC/H.265 spec. for more information");
     options.add(optionsOutput);
 
     po::options_description optionsRate("Rate control options");
@@ -96,6 +103,7 @@ int parseEncodeOptions(po::variables_map &vm, int argc, const char* const argv[]
         ("field-coding", po::bool_switch()->default_value(false), "enable field coding")
         ("max-gop-n", po::value<int>()->default_value(250), "maximum intra picture interval")
         ("max-gop-m", po::value<int>()->default_value(8), "maximum anchor picture interval (1 or 8)")
+        ("segment", po::value<int>()->default_value(-1), "Enable IDR segmentation (-1 for Disabled)")
         ("wpp", po::bool_switch()->default_value(true), "enable wave-front parallel processing (default enabled)")
         ("ctu", po::value<int>()->default_value(64), "CTU size in luma pixels")
         ("min-cu", po::value<int>()->default_value(8), "minimum CU size in luma pixels")

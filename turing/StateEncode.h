@@ -46,6 +46,7 @@ For more information, contact us at info @ turingcodec.org.
 #include "sei/pic_timing.h"
 #include "sei/active_parameter_sets.h"
 #include "sei/user_data_unregistered.h"
+#include "sei/mastering_display_colour_volume.h"
 #include "AdaptiveQuantisation.h"
 #include "RateControl.h"
 #include <boost/program_options.hpp>
@@ -514,7 +515,8 @@ struct StateEncodePictureSei :
     DecodedPictureHash,
     ActiveParameterSets2,
     AlternativeTransferCharacteristics,
-    UserDataUnregistered
+    UserDataUnregistered,
+    MasteringDisplayColourVolume
     {
     };
 
@@ -625,24 +627,25 @@ struct BackupPredictionInfo
 
 struct PsnrAnalysis
 {
+    struct PsnrFrame
+    {
+        double currentPsnr[3] = {0.0, 0.0, 0.0};
+    };
+
     PsnrAnalysis(int bitDepth=0)
     {
         this->bitDepth = bitDepth;
         this->pictures = 0;
-        for (int cIdx = 0; cIdx < 4; ++cIdx)
-        {
-            this->sse[cIdx] = 0.0;
-            this->samples[cIdx] = 0.0;
-            this->sumPsnr[cIdx] = 0.0;
-            if(cIdx < 3) this->currentPsnr[cIdx] = 0.0;
-        }
     }
 
     template <typename Sample>
-    void analyse(Picture<Sample> &picture, Picture<Sample> &reference)
+    void analyse(int poc, Picture<Sample> &picture, Picture<Sample> &reference)
     {
+        std::unique_lock<mutex> lockFrameDistortion(frameDistortionToken);
+        assert(psnrOnFrameBasis.find(poc) == psnrOnFrameBasis.end());
         double pictureSse[4] = { 0.0, 0.0, 0.0, 0.0 };
         double pictureSamples[4] = { 0.0, 0.0, 0.0, 0.0 };
+        PsnrFrame currentDistortion;
 
         for (int cIdx = 0; cIdx < 3; ++cIdx)
         {
@@ -673,13 +676,15 @@ struct PsnrAnalysis
             double psnr = 999.0;
             if (mse > 0.0) psnr = 10.0 * log10(max * max / mse);
             this->sumPsnr[cIdx] += psnr;
-            if(cIdx < 3) this->currentPsnr[cIdx] = psnr;
+            if(cIdx < 3) currentDistortion.currentPsnr[cIdx] = psnr;
         }
 
         ++this->pictures;
+        psnrOnFrameBasis[poc] = currentDistortion;
     }
     void report(std::ostream &os)
     {
+        std::unique_lock<mutex> lockFrameDistortion(frameDistortionToken);
         std::ostringstream o;
 
         o << "PSNR report (dB)\n";
@@ -709,12 +714,30 @@ struct PsnrAnalysis
 
         os << o.str();
     }
+    void getPsnrFrameData(int poc, double &psnrY, double &psnrU, double &psnrV)
+    {
+        std::unique_lock<mutex> lockFrameDistortion(frameDistortionToken);
+        auto currentFrameDistortion = psnrOnFrameBasis.find(poc);
+        assert(currentFrameDistortion != psnrOnFrameBasis.end());
+        psnrY = currentFrameDistortion->second.currentPsnr[0];
+        psnrU = currentFrameDistortion->second.currentPsnr[1];
+        psnrV = currentFrameDistortion->second.currentPsnr[2];
+    }
+    void removePsnrFrameData(int poc)
+    {
+        std::unique_lock<mutex> lockFrameDistortion(frameDistortionToken);
+        auto currentFrameDistortion = psnrOnFrameBasis.find(poc);
+        assert(currentFrameDistortion != psnrOnFrameBasis.end());
+        psnrOnFrameBasis.erase(poc);
+    }
     int bitDepth;
     int pictures;
-    double sse[4];
-    double samples[4];
-    double sumPsnr[4];
-    double currentPsnr[3];
+    double sse[4]         = {0.0, 0.0, 0.0, 0.0};
+    double samples[4]     = {0.0, 0.0, 0.0, 0.0};
+    double sumPsnr[4]     = {0.0, 0.0, 0.0, 0.0};
+
+    std::map<int, PsnrFrame> psnrOnFrameBasis;
+    std::mutex frameDistortionToken;
 };
 
 
@@ -731,7 +754,10 @@ struct StateEncode :
     ValueHolder<more_rbsp_trailing_data>
     {
         StateEncode(const boost::program_options::variables_map &vm) :
-            InputQueue(vm["max-gop-n"].as<int>(), vm["max-gop-m"].as<int>(), vm["field-coding"].as<bool>(), vm["shot-change"].as<bool>()),
+            InputQueue(vm["max-gop-n"].as<int>(), vm["max-gop-m"].as<int>(),
+                       vm["field-coding"].as<bool>(),
+                       vm["shot-change"].as<bool>(),
+                       vm["segment"].as<int>()),
             ThreadPool((vm["no-parallel-processing"].as<bool>())? 1 : vm["threads"].as<int>()),
             StateFunctionTables(true,
 #ifdef VALGRIND_FRIENDLY
@@ -868,18 +894,19 @@ struct StateEncode :
         bool decodedHashSei;
         int verbosity;
         int gopM;
+        int segmentLength;
         int maxnummergecand;
         size_t concurrentFrames;
         int internalbitdepth;
         int externalbitdepth;
         HashType hashType;
-        std::vector<int> hashElement; // review: duplicates picture_md5 et. al.
         bool useAq;
         bool useRateControl;
         int preferredTransferCharacteristics;
         bool userDataUnregSeiWritten;
         int userDataUnregMsgLen;
         bool repeatHeaders;
+        bool masteringDisplayInfoPresent;
 
         DecodedPictureHash decodedPictureHash;
         std::ofstream fileOutYuvPictures;
@@ -897,6 +924,47 @@ struct StateEncode :
             bool done;
             bool keyframe; //< true if IDR, CDR or BLA picture (for FFmpeg etc.)
         };
+
+        struct FrameHash
+        {
+            std::vector<int> hash;
+        };
+
+        struct MasteringDisplayInfo
+        {
+            uint16_t displayPrimariesX[3];
+            uint16_t displayPrimariesY[3];
+            uint16_t whitePointX;
+            uint16_t whitePointY;
+            uint32_t maxDisplayMasteringLuma;
+            uint32_t minDisplayMasteringLuma;
+        };
+
+        // Structure to store the information about the mastering display colour volume as specified in ST.2086
+        MasteringDisplayInfo masterDisplayInfo;
+
+        // Map to store hashes on a frame basis, associated mutex and helper functions
+        std::map<int, FrameHash> hashOnFrameBasis;
+        std::mutex hashFrameToken;
+        void addFrameHash(int poc, FrameHash &element)
+        {
+            std::unique_lock<std::mutex> lockFrameBasisMap(hashFrameToken);
+            assert(hashOnFrameBasis.find(poc) == hashOnFrameBasis.end());
+            hashOnFrameBasis[poc] = element;
+        }
+        void removeFrameHash(int poc)
+        {
+            std::unique_lock<std::mutex> lockFrameBasisMap(hashFrameToken);
+            assert(hashOnFrameBasis.find(poc) != hashOnFrameBasis.end());
+            hashOnFrameBasis.erase(poc);
+        }
+        FrameHash& getFrameHash(int poc)
+        {
+            std::unique_lock<std::mutex> lockFrameBasisMap(hashFrameToken);
+            assert(hashOnFrameBasis.find(poc) != hashOnFrameBasis.end());
+            auto currentFrameHash = hashOnFrameBasis.find(poc);
+            return currentFrameHash->second;
+        }
 
         // pictures currently being encoded (bitstream order)
         std::deque<Response> responses;

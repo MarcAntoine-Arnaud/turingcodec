@@ -129,6 +129,24 @@ bool writeOut(H &h)
         stateEncode->userDataUnregSeiWritten = true;
     }
 
+    const bool writeMasterDisplayInfoSei = stateEncode->masteringDisplayInfoPresent && (isIrap(nut) || h[PicOrderCntVal()] == 0);
+    if(writeMasterDisplayInfoSei)
+    {
+        for(int c = 0; c < 3; c++)
+        {
+            h[display_primaries_x(c)] = stateEncode->masterDisplayInfo.displayPrimariesX[c];
+            h[display_primaries_y(c)] = stateEncode->masterDisplayInfo.displayPrimariesY[c];
+        }
+        h[white_point_x()] = stateEncode->masterDisplayInfo.whitePointX;
+        h[white_point_y()] = stateEncode->masterDisplayInfo.whitePointY;
+        h[max_display_mastering_luminance()] = stateEncode->masterDisplayInfo.maxDisplayMasteringLuma;
+        h[min_display_mastering_luminance()] = stateEncode->masterDisplayInfo.minDisplayMasteringLuma;
+
+        h[nal_unit_type()] = PREFIX_SEI_NUT;
+        h[last_payload_type_byte()] = PayloadTypeOf<mastering_display_colour_volume>::value;
+        h(byte_stream_nal_unit(0));
+    }
+
     if (stateEncode->fieldcoding)
     {
         PictureWrapper picturewrapper = *static_cast<StateEncodePicture *>(h)->docket->picture;
@@ -155,16 +173,7 @@ bool writeOut(H &h)
 
     // Write the slice segment NALU (slice_segment_data() and slice_segment_trailing_bits() suppressed here)
     NalWriter *nalWriter = h;
-    size_t rateBefore = (nalWriter->data->size()) << 3;
     h(byte_stream_nal_unit(0));
-
-    size_t rateAfter = (nalWriter->data->size()) << 3;
-    if(stateEncode->useRateControl)
-    {
-        StateEncodePicture *stateEncodePicture = h;
-        int currentPictureLevel = stateEncodePicture->docket->sopLevel;
-        stateEncode->rateControlEngine->setHeaderBits(static_cast<int>(rateAfter - rateBefore), h[slice_type()] == I, currentPictureLevel);
-    }
 
     {
         // Write out substream data (already with emulation prevention applied)
@@ -181,6 +190,22 @@ bool writeOut(H &h)
         h[hash_type()] = stateEncode->hashType;
         h[last_payload_type_byte()] = PayloadTypeOf<decoded_picture_hash>::value;
         h(byte_stream_nal_unit(0));
+    }
+
+    if (stateEncode->useRateControl)
+    {
+        StateEncodePicture *stateEncodePicture = h;
+        int currentPictureLevel = stateEncodePicture->docket->sopLevel;
+        size_t codingBits = (nalWriter->data->size()) << 3;
+
+        stateEncode->rateControlEngine->updateAfterEncoding(stateEncodePicture->docket, static_cast<int>(codingBits));
+
+        stateEncode->rateControlEngine->updateSequenceControllerFinishedFrames(stateEncodePicture->docket);
+#if WRITE_RC_LOG
+        char data[100];
+        sprintf(data, " %10d |\n", static_cast<int>(codingBits));
+        stateEncode->rateControlEngine->writetoLogFile(data);
+#endif
     }
 
     return isKeyframe;
@@ -230,26 +255,6 @@ bool TaskEncodeOutput<H>::run()
                 auto h =  this->h.extend(&*response.picture);
 
                 response.keyframe = writeOut(h);
-
-                if(stateEncode->useRateControl)
-                {
-                    NalWriter *nalWriter = h;
-                    size_t rate = (nalWriter->data->size()) << 3;
-                    bool isIntra = h[slice_type()] == I;
-                    int averageQp = NON_VALID_QP;
-                    double averageLambda = NON_VALID_LAMBDA;
-                    if(!isIntra)
-                        stateEncode->rateControlEngine->getAveragePictureQpAndLambda(averageQp, averageLambda);
-
-                    StateEncodePicture *stateEncodePicture = h;
-                    int currentPictureLevel = stateEncodePicture->docket->sopLevel;
-                    stateEncode->rateControlEngine->updateSequenceController(static_cast<int>(rate), averageQp, averageLambda, isIntra, currentPictureLevel);
-#if WRITE_RC_LOG
-                    char data[100];
-                    sprintf(data, " %10d | %10d \n", (int)rate, stateEncode->rateControlEngine->getCpbFullness());
-                    stateEncode->rateControlEngine->writetoLogFile(data);
-#endif
-                }
 
                 response.done = true;
                 stateEncode->responsesAvailable.notify_all();

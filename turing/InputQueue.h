@@ -34,7 +34,7 @@ For more information, contact us at info @ turingcodec.org.
 
 struct InputQueue
 {
-    InputQueue(int maxGopN, int maxGopM, bool fieldCoding, bool shotChange);
+    InputQueue(int maxGopN, int maxGopM, bool fieldCoding, bool shotChange, int segmentLength);
 
     ~InputQueue();
 
@@ -64,15 +64,22 @@ struct InputQueue
         std::shared_ptr<EstimateIntraComplexity> icInfo;
         std::shared_ptr<AdaptiveQuantisation> aqInfo;
         int poc;
+        int absolutePoc;
         int nut;
         int sliceType;
         int qpOffset;
         double qpFactor;
         int currentGopSize;
         int sopLevel;
+        int pocInSop;
+        int sopId;
         References references;
         int64_t dts;
         bool isShotChange;
+        int hierarchyLevel;
+        int numSameHierarchyLevel;
+        int intraFramePoc;
+        int segmentPoc;
     };
 
     // Retrieves a docket: a packet of work containing a picture and instructions of how to encode it.
