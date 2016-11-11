@@ -1,6 +1,10 @@
 language: generic
 sudo: required
 
+os:
+  - linux
+  - osx
+
 addons:
   apt:
     sources:
