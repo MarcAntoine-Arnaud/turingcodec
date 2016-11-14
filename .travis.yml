@@ -15,7 +15,7 @@ addons:
 script:
   - mkdir build
   - cd build
-  - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 ..
+  - cmake ..
   - make
   - git clone -n https://github.com/kupix/bitstreams.git
   - cd bitstreams
