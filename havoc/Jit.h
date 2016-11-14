@@ -152,7 +152,7 @@ namespace Jit {
             {
                 if (this->getSize() == 0) return 0;
                 assert(CountArguments<F>::value == this->nArguments);
-                return reinterpret_cast<F *>(this->getCode());
+                return const_cast<F *>(reinterpret_cast<F *>(this->getCode()));
             }
 
 protected:
