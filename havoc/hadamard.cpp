@@ -837,9 +837,9 @@ int init_hadamard_satd(void *p, havoc_code code)
 {
     BoundHadamardSatdBase *b = (BoundHadamardSatdBase *)p;
     if (b->bits == 8)
-        return static_cast<bound_hadamard_satd<uint8_t> *>(b)->init(code);
+        return static_cast<bound_hadamard_satd<unsigned char> *>(b)->init(code);
     else
-        return static_cast<bound_hadamard_satd<uint16_t> *>(b)->init(code);
+        return static_cast<bound_hadamard_satd<unsigned short> *>(b)->init(code);
 }
 
 
@@ -847,9 +847,9 @@ void invoke_hadamard_satd(void *p, int n)
 {
     BoundHadamardSatdBase *b = (BoundHadamardSatdBase *)p;
     if (b->bits == 8)
-        return static_cast<bound_hadamard_satd<uint8_t> *>(b)->invoke(n);
+        return static_cast<bound_hadamard_satd<unsigned char> *>(b)->invoke(n);
     else
-        return static_cast<bound_hadamard_satd<uint16_t> *>(b)->invoke(n);
+        return static_cast<bound_hadamard_satd<unsigned short> *>(b)->invoke(n);
 }
 
 
