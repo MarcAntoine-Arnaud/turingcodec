@@ -224,4 +224,5 @@ if(UNIX)
 endif()
 
 install(TARGETS turing LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+install(TARGETS turing-exe DESTINATION bin)
 install(FILES turing.h DESTINATION include)
